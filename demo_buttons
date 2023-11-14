@@ -1,0 +1,61 @@
+#!/bin/bash
+source bashui
+
+defb(){
+    # Create default button to copy
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Button name
+    #4 Function to run
+    #5 Text color
+    #6 Border color
+    #7 Background color
+    #           1    2      3          4          5      6      7
+    button    "$1" "$2" "butt $3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
+}
+
+clr(){ for i in {5..9}; do XY 15 $i "%$((COLUMNS-15))s"; done; } # clear output area
+but_a(){ defb "$1" "$2" A; }
+but_b(){ defb "$1" "$2" B; }
+but_c(){ defb "$1" "$2" C; }
+but_d(){ defb "$1" "$2" D; }
+but_e(){ defb "$1" "$2" E; }
+but_f(){ defb "$1" "$2" F; }
+
+fun_a(){ clr; XY 15 5 "butt A pressed(${_button_[*]})"; }
+fun_b(){ clr; XY 15 5 "butt B pressed(${_button_[*]})"; }
+fun_c(){ clr; XY 15 5 "butt C pressed(${_button_[*]})"; }
+fun_d(){ clr; XY 15 5 "butt D pressed(${_button_[*]})"; }
+fun_e(){ clr; XY 15 5 "butt E pressed(${_button_[*]})"; }
+fun_f(){ clr; XY 15 5 "butt F pressed(${_button_[*]})"; }
+
+cursor off
+default_button but_b
+
+ybuttons=(but_a but_b but_c)
+xbuttons=(but_d but_e but_f)
+
+butts(){
+    y_row    2   "${ybuttons[@]}"
+    x_row $LINES "${xbuttons[@]}"
+}
+
+menu(){
+    butts
+
+    while true; do
+    read_input
+    case $_input_ in
+         up     ) select_prev_butt "${ybuttons[@]}"; butts;;
+         down   ) select_next_butt "${ybuttons[@]}"; butts;;
+         left   ) select_prev_butt "${xbuttons[@]}"; butts;;
+         right  ) select_next_butt "${xbuttons[@]}"; butts;;
+         enter  ) press_button                       butts;;
+         escape ) return                                  ;;
+    esac
+    done
+}
+
+clear
+XY 1 1 "$red Esc to exit"
+menu

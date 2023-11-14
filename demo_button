@@ -1,0 +1,43 @@
+#!/bin/bash
+source bashui
+
+mess="RESULT"
+name="The Button"
+title="Push the button, will get a result..."
+
+butt(){
+    # Create default button to copy
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Button name
+    #4 Function to run
+    #5 Text color
+    #6 Border color
+    #7 Background color
+    #             1                            2         3       4       5      6       7
+    button $((COLUMNS/2-(${#name}/2+2))) $((LINES/2)) "$name" "result" "$wht" "$ylw" "$bblk"
+}
+
+result(){
+    XY           $((COLUMNS/2-${#mess}/2))  $((LINES/2+5))  "$mess"
+    (sleep 1; XY $((COLUMNS/2-${#mess}/2))  $((LINES/2+5)) "${mess//[[:print:]]/ }") &
+}
+
+menu(){
+    XY $((COLUMNS/2-${#title}/2)) $((LINES/2-2)) "$title"
+    butt
+
+    while true; do
+        read_input
+        case $_input_ in
+             enter ) press_button butt;;
+             escape) return;;
+        esac
+    done
+}
+
+cursor off
+default_button butt
+
+clear
+menu

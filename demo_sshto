@@ -1,0 +1,839 @@
+#!/usr/bin/env bash
+#--------------------------{ Default values }---------------------------------------------------------------------------
+     OPT=$1     # Options.
+  sshdir=~/.ssh # Ssh configfiles folder
+     KEY="$sshdir/id_rsa.pub" # SSH key to use in command Sshkey(Add my ssh key to host).
+  REMOTE=8080   # Remote port for tunneling.
+   LOCAL=18080  # Local  port for tunneling.
+   GUEST=$USER  # Alternative username to login with.
+    DEST='~'    # Destination folder on target server to download\upload files and sshfs mount.
+    TIME=60     # Timer for tunneling command. Tunnel will be closed after 60 seconds, but it will stay open if used.
+  EDITOR=nano   # SSH confile editor.
+  LSEXIT=true   # Perform ls on exit true|false.
+    home=$PWD   # Destination folder on local  server to download\upload files and sshfs mount.
+sshfsopt=       # Sshfs options if needed
+group_id=dummy  # Group separator identification template, 'dummy' by default, don't ask why, historically)
+knwhosts="$sshdir"/known_hosts # Path to known_hosts file.
+ confile=~/.sshtorc            # Path to config file, have to be chmod'ed to 600.
+ tmpfile=/tmp/sshtorc-${USER}  # Path to tmp file to save selected context.
+sshto_script[0]=~              # Path to sshto script
+sshto_script[1]=.sshto_script  # Sshto script filename
+sshto_script[2]="${sshto_script[0]}/${sshto_script[1]}" # Sshto script full
+#------------------------{ Add some tabs }------------------------------------------------------------------------------
+tabbed(){ target=$target gnome-terminal --title=$target --tab -qe "${1/_target_/$target}"; } # Terminal command for tabs
+
+#------------------------{ Add your commands to this lists }------------------------------------------------------------
+cmdlist_renew(){
+    cmdlist=(
+        "Command"    "Description"
+        "${slct[@]}" #De/Select command
+    $grn"Username"   "Change ssh username to $grn$GUEST"
+    $grn"Add tab"    "Add terminal tab with sshto for $ylw$target$cm1"
+    $grn"Ssh tab"    "Add terminal tab with ssh to $ylw$target"
+        ''           ''
+        "ls -lah"    "List Files"
+        "free -h"    "Show free memory"
+        "df  -ih"    "Show free inodes"
+        "df   -h"    "Show free disk space"
+        "Custom"     "Run custom command on $ylw$target"
+        "Script"     "Run custom script on $ylw$target"
+        ''           ''
+        'Yes'        "Say 'yes' to SSH"
+        "Info"       "Full system info"
+        'Fix_id'     "Update host in known_hosts"
+        "Sshkey"     "Add my ssh key to $ylw$target"
+        "Alias"      "Add my useful aliases to $ylw$target"
+        ''           ''
+        "Home"       "Change home folder $grn$home ${cm1}on local server"
+        "Dest"       "Change destination folder $grn$DEST ${cm1}on $ylw$target"
+        "Upload"     "Upload file or folder from $grn$home ${cm1}to $ylw$target$grn:$DEST"
+        "Download"   "Download file or folder from $ylw$target$grn:$DEST ${cm1}to $grn$home"
+        "Mount"      "Mount remote folder $ylw$target$grn:$DEST ${cm1}to $grn$home"
+        "Unmount"    "Unmount remote folder $ylw$target$grn:$DEST ${cm1}from $grn$home"
+        ''           ''
+        "Local"      "Change local  port $grn$LOCAL"
+        "Remote"     "Change remote port $grn$REMOTE"
+        "Tunnel"     "Start portunneling from $ylw$target:$grn$REMOTE ${cm1}to ${ylw}localhost:$grn$LOCAL"
+        ''           ''
+        "ShowConf"   "Show ssh config for this host"
+        "EditConf"   "Edit ssh config for this host"
+    )
+    cmdlist_group=(
+        "Command"    "Description"
+        "${slct_grp[@]}" #De/Select command
+        "Username"   "Change ssh username to $grn$GUEST"
+        "Add tabs"   "Add terminal tabs with sshto for hosts in $ylw$group ${cm1}group"
+        "Ssh tabs"   "Add terminal tabs with ssh to hosts from $ylw$group ${cm1}group"
+        ''           ''
+        "ls  -la"    "List Files"
+        "free -h"    "Show free memory"
+        "df  -ih"    "Show free inodes"
+        "df   -h"    "Show free disk space"
+        "Custom"     "Run custom command on $ylw$group"
+        "Script"     "Run custom script on $ylw$group"
+        ''           ''
+        'Yes'        "Say 'yes' to SSH"
+        'Fix_id'     "Update hosts in known_hosts"
+        "Info"       "Full system info"
+        "Alias"      "Add my useful aliases to $ylw$group"
+        ''           ''
+        "Home"       "Change home folder $grn$home ${cm1}on local server"
+        "Dest"       "Change destination folder $grn$DEST on $ylw$group"
+        "Upload"     "Upload file or folder from $grn$home to $ylw$group$grn:${DEST}"
+        ''           ''
+        "EditConf"   "Edit ssh config for this group"
+    )
+}
+# Bashui settings
+source bashui
+tx_color=$wht  # TeXt Color
+br_color=$ylw  # BoRder Color
+bg_color=$bblk # BackGround Color
+cm1="$tx_color$bg_color"
+
+#-----------{ Check that needed packages are installed }-------------+
+packages=( gawk )
+install_help="
+${BLD}sshto$DEF requires that the package '${GRN}%b$DEF' is installed.
+Type this into the terminal and press return:
+
+    ${BLD}%b$DEF
+
+Then run ${BLD}sshto$DEF again
+"
+how_to_install(){
+    local package=$1
+    which yum     &> /dev/null && installer="yum -y install $package"
+    which brew    &> /dev/null && installer="brew install $package"
+    which apt-get &> /dev/null && installer="apt-get install -y $package"
+    printf -- "$install_help" "$package" "$installer"
+    [[ $2 ]] && exit $2
+}
+
+for package in "${packages[@]}"; { which $package &> /dev/null || how_to_install $package 1; }
+#------------------------{check bash version }--------------------------------------------------------------------------
+tversion=4.2
+cversion=${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]}
+gawk '{if($1>$2){exit 1}}' <<< "$tversion $cversion" || {
+    printf "\nBASH version ${BLD}$tversion+$DEF required to run ${BLD}sshto$DEF, your is - $BLD$BASH_VERSION$DEF\n"
+    exit 1
+}
+
+check_confile(){
+    [[ -e $confile  ]] || return
+    [[ $(stat -c "%a %U %G" "$confile") == "600 $USER $USER" ]] && . "$confile"
+}
+
+#------------------------{ Yes to ssh }---------------------------------------------------------------------------------
+ssh_yes(){
+    local hostname=${hostnames["$target"]}
+    local fprint=($(ssh-keyscan -H "$hostname" 2>/dev/null))
+    grep -q "${fprint[2]}" "$knwhosts" || echo "${fprint[@]}" >> "$knwhosts"
+}
+
+fix_id(){
+    local hostname=${hostnames["$target"]}
+    local address=$(dig  +short   $hostname)
+    ssh-keygen -f "$knwhosts" -R "$hostname"
+    ssh-keygen -f "$knwhosts" -R "$address"
+    ssh_yes
+}
+#------------------------{ System Info commands }-----------------------------------------------------------------------
+system_info(){
+    ssh $SSH_OPT $target "
+        printf '\n${BLD}Hostname:${DEF}\n'
+        hostname
+
+        printf '\n${BLD}Interfaces:${DEF}\n'
+        ip a
+
+        printf '\n${BLD}Memory:${DEF}\n'
+        LANG=Us free --si -h
+
+        printf '\n${BLD}CPU:${DEF}\n'
+        lscpu
+
+        printf '\n${BLD}Disk:${DEF}\n'
+        df -h; echo; df -ih; echo; lsblk
+
+        printf '\n${BLD}Software:${DEF}\n'
+        uname -a; echo
+        [[ -e /usr/bin/lsb_release ]] && { lsb_release -a; echo; }
+        [[ -e /usr/bin/java        ]] && { java  -version; echo; }
+        [[ -e /usr/bin/psql        ]] && { psql  -V      ; echo; }
+        [[ -e /usr/sbin/nginx      ]] && { nginx -v      ; echo; }
+
+        printf '${BLD}Logged in Users:${DEF}\n'
+        who
+
+        printf '\n${BLD}Port usage info:${DEF}\n'
+        netstat -tulpn 2> /dev/null
+
+        printf '\n${BLD}Processes:${DEF}\n'
+        top -bcn1 | head -n30
+    "
+}
+
+buttons_yesno=(but_yes but_no)
+row_yesno(){ x_row $((LINES/2)) "${buttons_yesno[@]}";}
+yesno(){
+    clear
+    cursor off
+    local count mess=$1
+    decolorizer "$mess" count
+    default_button but_no
+    XY $(((COLUMNS-${#count})/2)) $((LINES/2-2)) "${red}$mess"
+
+    while true; do
+        row_yesno
+        read_input
+        case $_input_ in
+             left   ) select_prev_butt "${buttons_yesno[@]}";;
+             right  ) select_next_butt "${buttons_yesno[@]}";;
+             escape ) return 1;;
+             enter  ) animate_button row_yesno
+                      case $_button_ in
+                                YES) return 0;;
+                                NO ) return 1;;
+                      esac;;
+        esac
+    done
+}
+
+#------------------------{ Show\Edit ssh config }-----------------------------------------------------------------------
+show_conf(){ clear; ssh -G $target; pause; }
+edit_conf(){
+    local new_group search=$target new_filename group_list name confs data
+    [[ $group ]] && search="$group_id[[:space:]]*#$group#"
+    [[ $group =~ Selected_hosts|Filtered_hosts ]] && {
+        yesno 'Save this group as permanent config file?' || return
+        my_reader 'Set new group(file) name:' $COLUMNS new_group "$new_group"
+        case $new_group:$? in
+                     '':0) return;;
+                      *:0) new_filename=~/.ssh/config_"${new_group// /_}"
+                           new_filename=${new_filename,,}
+                           [[ -f $new_filename ]] && {
+                                dialog --defaultno --yesno 'File exists, overwrite?' 5 45 || return
+                           }
+                           data="#Host DUMMY #$new_group#"
+                           group_list=("${selected_list[@]:2}")
+                           for ((i=0;  i<${#group_list[@]}; i+=2)); do
+                                name="${group_list[$i]}"
+                                data+="$(
+                                    echo; echo
+                                    gawk -vname="$name" '
+                                        BEGIN{IGNORECASE=1}
+                                        {
+                                            if ($1 == "host" && $2 == name){start=1}
+                                            if (start){if ($0 ~ /^#|^$/){exit}; print }
+                                        }
+                                    '   $CONFILES
+                                )"
+                           done
+                           echo "$data" > "$new_filename"
+                           return;;
+                      *:*) return;;
+        esac
+    }
+    confs=($(grep -rilE "Host[[:space:]]*$search" $CONFILES)) || { clear; echo 'Config file not found'; pause; return; }
+    $EDITOR "${confs[@]}"
+}
+
+#------------------------{ SSH to target server }-----------------------------------------------------------------------
+go_to_target(){ clear; cursor on; ssh $SSH_OPT $target || pause; $back_to; }
+
+#------------------------{ Add aliases }--------------------------------------------------------------------------------
+add_aliases(){
+    scp $SSH_OPT ~/.bash_aliases $target:~
+    ssh $SSH_OPT $target "grep '. ~/.bash_aliases' .bashrc || echo '. ~/.bash_aliases' >> .bashrc"
+}
+
+#------------------------{ Run function on a group of servers }---------------------------------------------------------
+group_run(){
+    local func group_list data
+    func="$1"
+    group_list=("${list[@]:2}")
+    SSH_OPT_CUR="$SSH_OPT"
+    SSH_OPT="$SSH_OPT -o ConnectTimeout=10 -o BatchMode=true"
+    case $func in tabbed*)
+        for ((i=0; i<${#group_list[@]}; i+=2)); do
+              target="${group_list[$i]}"
+              tabbed "${2/_target_/$target}"
+        done
+        return;;
+    esac
+    WAIT
+    data=$(
+        for ((i=0; i<${#group_list[@]}; i+=2)); do
+              target="${group_list[$i]}"
+          [[ $target =~ ^-+.*-+$ ]] && continue
+          (  code="$BLD$GRN"
+             data=$( $func 2>&1 | sed ':a;N;$!ba;s/\n/\\n/g'; exit ${PIPESTATUS[0]}) || code="$BLD$RED"
+             echo "$code----{ $target }----$DEF\\n${data:-Command did not output anything.}\\n"
+          )  &
+        done
+    )
+    GO
+    printf -- '%b' "$data"
+    SSH_OPT="$SSH_OPT_CUR"
+}
+
+#------------------------{ Run command/script }-------------------------------------------------------------------------
+run_command(){ ssh $SSH_OPT $target $command; }
+run_script (){
+    scp -r $SSH_OPT "${sshto_script[2]}" $target:~/ || return 1
+    ssh    $SSH_OPT "$target" "~/${sshto_script[1]}"
+}
+
+#------------------------{ Add ssh key }--------------------------------------------------------------------------------
+add_sshkey(){ clear; ssh_yes > /dev/null; ssh-copy-id -i $KEY $SSH_OPT $target; }
+
+#------------------------{ Tunnelling command}--------------------------------------------------------------------------
+portunneling(){ ssh $SSH_OPT $target -f -L 127.0.0.1:$LOCAL:127.0.0.1:$REMOTE sleep $TIME; }
+
+#------------------------{ Change alternative username }----------------------------------------------------------------
+username(){
+    my_reader 'Change alternative username' $COLUMNS new_user "$GUEST"
+	case $new_user in
+	           '') return;;
+                *) GUEST=${new_user:-$GUEST}; SSH_OPT="-oUser=$GUEST"; USERNOTE="Username changed to $GUEST.";;
+	esac
+}
+
+#------------------------{ Create custom command/script }---------------------------------------------------------------
+buttons_custom=(but_run but_bck)
+row_custom(){ x_row $((LINES/2)) ${buttons_custom[@]}; }
+custom(){
+    local runner=
+    [[ $group ]] && runner='group_run'
+
+    my_reader 'Write down your command here:' $COLUMNS new_command "$new_command"
+    [[ $new_command ]] || $back_to
+	command=$new_command
+    yesno "Run command: '$command'?" && { clear; $runner run_command; pause; }
+    $back_to
+}
+
+buttons_scr=(but_run but_edt but_bck)
+row_scr(){ x_row $((LINES-3)) ${buttons_scr[@]}; }
+script_renew(){
+    clear
+    script_text=$(cat "${sshto_script[2]}")
+    XY 1 1 "$script_text"
+    cursor off
+}
+script(){
+    [[ -f ${sshto_script[2]} ]] || {
+        echo  -e '#!/bin/bash\necho "Running sshto script"' > "${sshto_script[2]}"
+        chmod +x "${sshto_script[2]}"
+    }
+
+    script_renew
+    while true; do
+        row_scr
+        read_input
+        case $_input_ in
+             left   ) select_prev_butt "${buttons_scr[@]}";;
+             right  ) select_next_butt "${buttons_scr[@]}";;
+             escape ) $back_to;;
+             enter  ) animate_button butts1st
+                      case $_button_ in
+                           RUN ) clear; $runner run_script; pause; $back_to;;
+                           EDIT) $EDITOR "${sshto_script[2]}"; script_renew;;
+                           BACK) $back_to;;
+                      esac;;
+        esac
+    done
+}
+
+#------------------------{ Change local port for tunnelling }-----------------------------------------------------------
+local_port(){
+    my_reader 'Change local port' $COLUMNS new_local "$LOCAL"
+    LOCAL=${new_local:-$LOCAL}
+}
+
+#------------------------{ Change remote port for tunnelling }----------------------------------------------------------
+remote_port(){
+    my_reader 'Change remote port' $COLUMNS new_remote "$REMOTE"
+    REMOTE=${new_remote:-$REMOTE}
+}
+
+#------------------------{ Upload\Download and mount dialogs }----------------------------------------------------------
+downpath(){
+    my_reader 'Change download folder' $COLUMNS new_path "$DEST"
+    DEST=${new_path:-$DEST}
+    dfilelist=
+}
+
+homepath(){
+    my_reader 'Change home folder' $COLUMNS new_path "$home"
+    home=${new_path:-$home}
+}
+
+uploader(){
+    printf "Uploading $BLD$ufilename$DEF\n"
+    scp -r $SSH_OPT $ufilename $target:"$DEST/"
+}
+
+mountdest(){
+    which  sshfs &> /dev/null || { clear; how_to_install sshfs; pause; return; }
+    clear; sshfs $sshfsopt "$target":"$DEST" "$home" || pause
+}
+
+unmountdest(){ mount | grep -q "$home" && umount "$home"; }
+
+buttons_upl=(but_upl but_bck)
+row_upl(){ x_row $((LINES-3)) ${buttons_upl[@]}; }
+files_upl(){ list_window "Select file or folder to upload" '70 30' "${ufilelist[@]}"; }
+upload(){
+    local runner=
+    _currentItem_=0
+    [[ $group ]] && runner='group_run'
+    ufilelist=( 'File name' 'File size' $(ls -sh1 $home | awk '{print $2,$1}' | tail +2) )
+
+    clear
+    cursor off
+    default_button but_upl
+    while true; do
+        row_upl
+        files_upl
+        read_input
+        case $_input_ in
+             up     ) select_prev_item        "${ufilelist[@]}"  ;;
+             down   ) select_next_item        "${ufilelist[@]}"  ;;
+             left   ) select_prev_butt        "${buttons_upl[@]}";;
+             right  ) select_next_butt        "${buttons_upl[@]}";;
+             pgup   ) select_prev_item --fast "${ufilelist[@]}"  ;;
+             pgdown ) select_next_item --fast "${ufilelist[@]}"  ;;
+             escape ) clear; return;;
+             enter  ) animate_button butts1st
+                      ufilename=$_target_
+                      case $_button_ in
+                           UPLOAD) clear; $runner uploader; pause;;
+                           BACK  ) clear; return;;
+                      esac;;
+             *      ) select_by_hot_key $_input_ "${ufilelist[@]}"; files_upl;;
+        esac
+    done
+}
+
+buttons_dnl=(but_dnl but_bck)
+row_dnl(){ x_row $((LINES-3)) ${buttons_dnl[@]}; }
+files_dnl(){ list_window "Select file or folder to download" '70 30' "${dfilelist[@]}"; }
+download(){
+    _currentItem_=0
+    [[ $dfilelist ]] || {
+        WAIT
+        dfilelist=$(ssh $SSH_OPT $target ls -sh1 $DEST 2>&1) \
+            && dfilelist=( 'File name' 'File size' $(awk '{print $2,$1}' <<< "$dfilelist" | tail +2) ) \
+            || {
+                clear
+                echo "$dfilelist"
+                pause
+                dfilelist=
+                second_dialog
+            }
+        GO
+    }
+
+    clear
+    cursor off
+    default_button but_dnl
+    while true; do
+        row_dnl
+        files_dnl
+        read_input
+        case $_input_ in
+             up     ) select_prev_item        "${dfilelist[@]}"  ;;
+             down   ) select_next_item        "${dfilelist[@]}"  ;;
+             left   ) select_prev_butt        "${buttons_dnl[@]}";;
+             right  ) select_next_butt        "${buttons_dnl[@]}";;
+             pgup   ) select_prev_item --fast "${dfilelist[@]}"  ;;
+             pgdown ) select_next_item --fast "${dfilelist[@]}"  ;;
+             escape ) clear; return;;
+             enter  ) animate_button butts1st
+                      dfilename=$_target_
+                      case $_button_ in
+                           DOWNLOAD) clear
+                                     printf "Downloading $BLD$dfilename$DEF\n"
+                                     scp -r $SSH_OPT $target:"$DEST/$dfilename" . || pause;;
+                           BACK    ) clear; return;;
+                      esac;;
+             *      ) select_by_hot_key $_input_ "${dfilelist[@]}"; files_dnl;;
+        esac
+    done
+}
+
+#------------------------{ Switch menu mode to contents view or full list }---------------------------------------------
+save_tmp(){ echo "$1" > "$tmpfile"; chmod 600 "$tmpfile"; }
+new_list(){
+    list=(); match=
+    for item in "${selected_list[@]}" "${filtered_list[@]}" "${fullist[@]}"; {
+        case         $item:$match    in
+                 *{\ *\ }*:1) break  ;;
+           *{\ $filter\ }*:*) match=1;;
+        esac
+        [[ $match ]] && list+=( "$item" )
+    }
+
+    [[ $filter =~ Selected ]] && return
+    [[ ${list[*]} ]] && save_tmp "filter='$filter'"
+    [[ ${list[*]} ]] || { list=( "${fullist[@]}" ); rm "$tmpfile"; }
+}
+
+buttons_cont=(but_sel but_cmd but_flt but_rel but_bck)
+butts_cont(){ x_row $((LINES-3)) ${buttons_cont[@]}; }
+cont(){ list_window "Select list of hosts:" 1 "${cont_data[@]}"; }
+contents_menu(){
+    _currentItem_=0
+    local filter_tmp=$filter selected= filtered=
+    [[ ${selected_list[@]} ]] && selected='Selected_hosts'
+    [[ ${filtered_list[@]} ]] && filtered='Filtered_hosts'
+    cont_data=( 'Available ssh configs' ALL $selected $filtered "${content[@]}")
+    default_button but_sel
+    cursor off
+    clear
+    cont
+    butts_cont
+    XY 5 1 "${red}Esc to exit"
+
+    while true; do
+        read_input
+        case $_input_ in
+             up     ) select_prev_item        "${cont_data[@]}"   ; cont      ;;
+             down   ) select_next_item        "${cont_data[@]}"   ; cont      ;;
+             left   ) select_prev_butt        "${buttons_cont[@]}"; butts_cont;;
+             right  ) select_next_butt        "${buttons_cont[@]}"; butts_cont;;
+             pgup   ) select_prev_item --fast "${cont_data[@]}"   ; cont      ;;
+             pgdown ) select_next_item --fast "${cont_data[@]}"   ; cont      ;;
+             escape ) bye;;
+             enter  ) animate_button butts_cont
+                      filter=$_target_
+                case $filter:$_button_ in
+                         All:SELECT  ) list=( "${selected_list[@]}" "${fullist[@]}" )
+                                       save_tmp       "filter=" ;;
+                           *:COMMANDS) second_dialog "$filter"  ;;
+                           *:FILTER  ) filter_items first_dialog;;
+                           *:RELOAD  ) restart ; contents_menu  ;;
+                           *:SELECT  ) new_list; first_dialog   ;;
+                           *:BACK    ) $back_to;;
+                esac;;
+             *      ) select_by_hot_key $_input_ "${cont_data[@]}"; cont;;
+        esac
+    done
+}
+
+#------------------------{ Selector }-----------------------------------------------------------------------------------
+declare -A slctd_hosts
+declare -A slctd_groups
+
+gen_selected_list(){
+    local k
+    selected_list=('-----------{ Selected_hosts }-----------' '_LINE_')
+    for k in "${!slctd_hosts[@]}"; { selected_list+=("$k" "${slctd_hosts[$k]}"); }
+}
+
+slct_dslct(){
+    local desc k v
+
+    # remove from selection
+    [[ ${slctd_hosts[$target]} && $1 != "select" ]] && {
+        unset slctd_hosts[$target]
+        gen_selected_list
+        ((${#selected_list[@]}==2)) && unset selected_list
+        return
+    }
+
+    [[ $1 == "deselect" ]] && return
+    # add to selection
+    for ((k=0,v=1; k<N; k++,v++)); { [[ ${fullist[k]} =~ $target ]] && { desc=${fullist[v]}; break; }; }
+    slctd_hosts[$target]=$desc
+    gen_selected_list
+}
+
+slct_dslctgroup_run(){
+    group_list=("${list[@]:2}")
+    for ((i=0;  i<${#group_list[@]}; i+=2)); do
+        target="${group_list[$i]}"
+        slct_dslct "${command,,}"
+    done
+
+    [[ ${slctd_groups["$group"]} ]] && unset slctd_groups["$group"] || slctd_groups["$group"]=$group
+}
+
+#------------------------{ Items filter }-------------------------------------------------------------------------------
+my_reader(){
+    local name=$1 # Reader Name
+    local coll=$2 # Number of symbols to read
+    local varn=$3 # Name of the variable to read to
+    local valu=$4 # Preset value
+    reader $((LINES/2)) $coll "$name" $varn "$valu" "$wht" "$ylw" "$bblk"
+}
+
+filter_items(){
+    local n d
+    cursor on
+    declare -A filtered_hosts
+    filtered_list=('-----------{ Filtered_hosts }-----------' "$descline")
+    my_reader 'Enter filtering pattern' $COLUMNS items_filter "$items_filter"
+    yesno "Apply this filter? $ylw$items_filter" || $1
+	case $items_filter in
+                   '') unset filtered_list items_filter; contents_menu;;
+                    *) items_filter=${items_filter,,}
+                       for ((n=0,d=1; n<N; n+=2,d+=2)); do
+                           filter_by=${fullist[n]}
+                           [[ $items_filter  =~ ^\#.*$             ]] && filter_by=${fullist[d]}
+                           [[ ${filter_by,,} =~ ^-+.*-+$           ]] && continue
+                           [[ ${filter_by,,} =~ ${items_filter/\#} ]] && {
+                               [[ ${filtered_hosts[${fullist[n]}]} ]] || { # to remove dupes
+                                   filtered_list+=("${fullist[n]}" "${fullist[d]}")
+                                     filtered_hosts[${fullist[n]}]="${fullist[d]}"
+                               }
+                           }
+                       done
+                       ((${#filtered_list[@]}==2)) && { clear; pause 'Nothing found'; $1; }
+                       list=( "${filtered_list[@]}" );;
+	esac
+}
+
+#------------------------{ First dialog - Select target host }----------------------------------------------------------
+defb(){
+    # Create default button to copy
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Button name
+    #4 Function to run
+    #5 Text color
+    #6 Border color
+    #7 Background color
+    #           1    2    3    4       5           6           7
+    button    "$1" "$2" "$3" "$4" "$tx_color" "$br_color" "$bg_color"
+}
+
+but_yes(){ defb "$1" "$2" 'YES'      : ; }
+but_no (){ defb "$1" "$2" 'NO'       : ; }
+but_edt(){ defb "$1" "$2" 'EDIT'     : ; }
+but_con(){ defb "$1" "$2" 'CONNECT'  : ; }
+but_cmd(){ defb "$1" "$2" 'COMMANDS' : ; }
+but_upl(){ defb "$1" "$2" 'UPLOAD'   : ; }
+but_dnl(){ defb "$1" "$2" 'DOWNLOAD' : ; }
+but_run(){ defb "$1" "$2" 'RUN'      : ; }
+but_sel(){ defb "$1" "$2" 'SELECT'   : ; }
+but_rel(){ defb "$1" "$2" 'RELOAD'   : ; }
+but_ext(){ defb "$1" "$2" 'EXIT'     : ; }
+but_ctx(){ defb "$1" "$2" 'CONTENTS' : ; }
+but_bck(){ defb "$1" "$2" 'BACK'     : ; }
+but_flt(){ defb "$1" "$2" 'FILTER'   : ; }
+
+cursor off
+
+list_window(){
+    local name=$1 # List name
+    local coll=$2 # Number of columns
+    shift       2
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Window width
+    #4 Window height, min is 5
+    #5 Number of columns
+    #6 Name of the list
+    #7 Text color
+    #8 Border color
+    #9 Background color
+    #     1 2        3             4         5       6         7           8           9      data
+    items 5 2 $((COLUMNS-5)) $((LINES-5)) "$coll" "$name" "$tx_color" "$br_color" "$bg_color" "$@"
+}
+
+back_to=first_dialog
+buttons1st=(but_con but_cmd but_flt but_ctx)
+butts1st(){ x_row $((LINES-3)) ${buttons1st[@]}; }
+hosts(){ list_window "Select host to connect to. $USERNOTE" '40 60' "${hosts_data[@]}"; }
+first_dialog(){
+    _currentItem_=0
+    back_to=first_dialog
+    hosts_data=('Host name' 'Host description' "${list[@]//_LINE_/$descline}")
+    default_button but_con
+    cursor off
+    clear
+    hosts
+    butts1st
+    XY 5 1 "${red}Esc to exit"
+
+    while true; do
+        read_input
+        case $_input_ in
+             up     ) select_prev_item        "${hosts_data[@]}"; hosts   ;;
+             down   ) select_next_item        "${hosts_data[@]}"; hosts   ;;
+             left   ) select_prev_butt        "${buttons1st[@]}"; butts1st;;
+             right  ) select_next_butt        "${buttons1st[@]}"; butts1st;;
+             pgup   ) select_prev_item --fast "${hosts_data[@]}"; hosts   ;;
+             pgdown ) select_next_item --fast "${hosts_data[@]}"; hosts   ;;
+             escape ) bye;;
+             enter  ) animate_button butts1st
+                      target=$_target_
+                case $target:$_button_ in
+                   *{\ *\ }*:CONNECT ) filter=${target//*\{ }; filter=${filter// \}*}; new_list;  first_dialog;;
+                   *{\ *\ }*:COMMANDS) filter=${target//*\{ }; filter=${filter// \}*}; second_dialog "$filter";;
+                           *:CONNECT ) go_to_target;;
+                           *:COMMANDS) second_dialog;;
+                           *:EXIT    ) exit;;
+                           *:FILTER  ) filter_items first_dialog;;
+                           *:CONTENTS) contents_menu;;
+                esac;;
+             *      ) select_by_hot_key $_input_ "${hosts_data[@]}"; hosts;;
+        esac
+    done
+}
+
+gsel(){
+    [[ $group == "Selected_hosts" ]] && { slct_grp=(); return 1; }
+    [[ ${slctd_groups["$group"]}  ]] &&                return 0
+}
+#------------------------{ Second dialog - Select command }-------------------------------------------------------------
+butts2nd(){ x_row $((LINES-3)) ${buttons2nd[@]}; }
+commands_list(){
+    new_list
+    headings="Select command to run on $singleornot ${group:-$target}. $USERNOTE"
+    slct=(Select   "Add $ylw$target ${cm1}to tmp group Selected_hosts"      '' '')
+    [[ ${slctd_hosts["$target"]} ]] && slct=(Deselect "Remove $ylw$target ${cm1}from tmp group Selected_hosts" '' '')
+
+    group="$1" commands=("${cmdlist[@]}") singleornot='host' runner=''
+    [[ $group ]] && {
+        commands=("${cmdlist_group[@]}")
+        buttons2nd=(but_run but_bck but_ctx)
+        singleornot='group' runner='group_run' filter="$group"
+        slct_grp=(Select   "Add all hosts of $ylw$group ${cm1}to tmp group Selected_hosts"      '' '')
+        gsel && slct_grp=(Deselect "Remove all hosts of $ylw$group ${cm1}from tmp group Selected_hosts" '' '')
+    }
+
+    cmdlist_renew
+    list_window "$headings" '20 80' "${commands[@]}";
+}
+second_dialog(){
+    _currentItem_=0
+    back_to="second_dialog $1"
+    buttons2nd=(but_run but_con but_bck but_ctx)
+    local headings commands singleornot runner
+
+    clear
+    cursor off
+    commands_list "$1"
+    default_button but_run
+    XY 5 1 "${red}Esc to exit"
+
+    while true; do
+        commands_list "$1"
+        butts2nd
+        read_input
+        case $_input_ in
+             up     ) select_prev_item        "${commands[@]}"  ;;
+             down   ) select_next_item        "${commands[@]}"  ;;
+             left   ) select_prev_butt        "${buttons2nd[@]}";;
+             right  ) select_next_butt        "${buttons2nd[@]}";;
+             pgup   ) select_prev_item --fast "${commands[@]}"  ;;
+             pgdown ) select_next_item --fast "${commands[@]}"  ;;
+             escape ) bye;;
+             enter  ) animate_button butts2nd
+                      command=$_target_
+                case $command:${_button_,,} in
+                           '':run) :;;
+                   "Add tab"*:run) $runner tabbed "$0";;
+                   "Ssh tab"*:run) $runner tabbed "ssh $SSH_OPT _target_";;
+                     *'elect':run) slct_dslct$runner ; commands_list "$1";;
+                        Alias:run) clear; $runner add_aliases; pause;;
+                         Info:run) clear; $runner system_info; pause;;
+                          Yes:run) clear; $runner ssh_yes    ; pause;;
+                       Fix_id:run) clear; $runner fix_id     ; pause;;
+                       Sshkey:run) add_sshkey  ;;
+                       Upload:run) upload      ;;
+                       Custom:run) custom      ;;
+                       Script:run) script      ;;
+                        Mount:run) mountdest   ;;
+                      Unmount:run) unmountdest ;;
+                     Download:run) download    ;;
+                       Tunnel:run) portunneling;;
+                     ShowConf:run) show_conf   ;;
+                     EditConf:run) edit_conf   ;;
+                     Username:run) username    ; cmdlist_renew;;
+                         Dest:run) downpath    ; cmdlist_renew;;
+                         Home:run) homepath    ; cmdlist_renew;;
+                        Local:run) local_port  ; cmdlist_renew;;
+                       Remote:run) remote_port ; cmdlist_renew;;
+                            *:run) clear; $runner run_command; pause;;
+                            *:connect)  go_to_target ;;
+                            *:contents) contents_menu;;
+                            *:back)     first_dialog ;;
+                esac; cursor off;;
+             *      ) select_by_hot_key $_input_ "${commands[@]}";;
+        esac
+    done
+}
+
+#-------------{ Create the list of hosts. Get hosts and descriptions from ~/.ssh/config* }------------------------------
+declare -A hostnames=()
+desclength=20
+restart(){
+    fullist=()
+    content=()
+    hostnames=()
+    selected_list=()
+    CONFILES=$( # SSH confiles list.
+        shopt -s nullglob
+        echo  "$sshdir"/config*[!~]
+        [[ -f "$sshdir"/config ]] && echo "$sshdir"/config
+    )
+
+    while read -r name hostname desc; do
+        case    ${name,,} in
+            'group_name') name="{ $desc }"
+                          name_length=${#name}
+                          name_left=$[(40-name_length)/2]
+                          name_right=$[40-(name_left+name_length)]
+                          printf -v tmp "%${name_left}s_NAME_%${name_right}s"
+                          tmp=${tmp// /-}  name=${tmp//_NAME_/$name}
+                          content+=( "$desc" );  desc='_LINE_';;
+                    '#'*) continue;;
+        esac
+        ((${#desc}>desclength)) && desclength=${#desc}
+        hostnames["$name"]=$hostname #Create host:hostname pairs in hostnames array
+        fullist+=("$name" "$desc")   #Add Host and Description to the list
+    done < <(gawk '
+    BEGIN{IGNORECASE=1}
+    /Host /{
+        strt=1
+        host=$2
+        desc=gensub(/^.*Host .* #(.*)/, "\\1", "g", $0)
+        desc=gensub(/(.*)#.*/,          "\\1", "g", desc)
+        next
+    }
+    strt && host == "'"$group_id"'"{
+        print "group_name", "dummy", desc
+        strt=0
+    }
+    strt && /HostName /{
+        hostname=$2
+        print host, hostname, desc
+        strt=0
+    }'  $CONFILES)
+
+    descline=$(line - $desclength)
+    list=( "${fullist[@]}" "${quick_butt[@]}" )
+    N=${#fullist[@]}
+     qcmd='-----------{ Quick commands }-----------'
+    qbut1='1             Filter items'
+    quick_butt=(
+        ''        ''
+        "$qcmd"   "$descline"
+        "$qbut1"  "Create list of hosts filtered by pattern"
+    )
+}
+
+#--{ Go baby, GO!) }--
+check_confile;  restart
+[[ -e $tmpfile  ]] && . "$tmpfile"
+[[    $filter   ]] &&    new_list
+[[ $target      ]] || first_dialog
+[[ $OPT =~ name ]] && { echo $target; exit; }
+[[ $target      ]] && second_dialog
+
+bye #:)

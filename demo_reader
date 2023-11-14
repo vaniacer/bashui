@@ -1,0 +1,21 @@
+#!/bin/bash
+source bashui
+
+my_reader(){
+    #1 Y(line) coordinate
+    #2 Number of symbols to read
+    #3 Reader Name
+    #4 Name of the variable to read to
+    #5 Preset value
+    #6 Text Color
+    #7 boRder Color
+    #8 backGround Color
+    #      1  2          3         4    5      6      7      8
+    reader 10 20 'test data input' td "$td" "$wht" "$ylw" "$bblk"
+}
+
+td='initial text'
+clear
+my_reader
+clear
+bye "$td"
