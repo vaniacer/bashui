@@ -26,6 +26,8 @@ result(){
 }
 
 menu(){
+    cursor off
+    default_button butt
     XY $((COLUMNS/2-${#title}/2)) $((LINES/2-2)) "$title"
     butt
 
@@ -37,9 +39,6 @@ menu(){
         esac
     done
 }
-
-cursor off
-default_button butt
 
 clear
 menu
