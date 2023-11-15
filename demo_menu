@@ -70,7 +70,7 @@ xbuttons=(but_d but_e but_f)
 butts (){ x_row $LINES "${xbuttons[@]}"; }
 ilist (){ my_items     "${data[@]}"    ; }
 ilist2(){ my_items2    "${data[@]}"    ; }
-menu(){
+menu  (){
     while true; do
         $1; butts
         read_input

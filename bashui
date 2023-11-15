@@ -503,14 +503,14 @@ read_input(){
             # escape sequences additional check
             $'\u1b'*) read -rsN4 -t 0.001 _input_ &> /dev/null
                       case ${_input_,,} in
-                                   # arrow keys and escape support
+                                   # arrows, pgUp/Down and escape support
                                    *a*) _input_=up    ;;
                                    *b*) _input_=down  ;;
                                    *d*) _input_=left  ;;
                                    *c*) _input_=right ;;
-                                    '') _input_=escape;;
                                    *5*) _input_=pgup  ;;
                                    *6*) _input_=pgdown;;
+                                    '') _input_=escape;;
                       esac;;
                    *) _input_=${_input_,,}
                       _input_=${_input_:0:1};;
