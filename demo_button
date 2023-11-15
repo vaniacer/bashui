@@ -19,8 +19,10 @@ butt(){
 }
 
 result(){
-    XY           $((COLUMNS/2-${#mess}/2))  $((LINES/2+5))  "$mess"
-    (sleep 1; XY $((COLUMNS/2-${#mess}/2))  $((LINES/2+5)) "${mess//[[:print:]]/ }") &
+    x=$((COLUMNS/2-${#mess}/2))
+    y=$((LINES/2+5))
+    XY           $x $y  "$mess"
+    (sleep 1; XY $x $y "${mess//[[:print:]]/ }") &
 }
 
 menu(){
