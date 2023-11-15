@@ -29,9 +29,6 @@ fun_d(){ clr; XY 15 5 "butt D pressed(${_button_[*]})"; }
 fun_e(){ clr; XY 15 5 "butt E pressed(${_button_[*]})"; }
 fun_f(){ clr; XY 15 5 "butt F pressed(${_button_[*]})"; }
 
-cursor off
-default_button but_b
-
 ybuttons=(but_a but_b but_c)
 xbuttons=(but_d but_e but_f)
 
@@ -41,21 +38,23 @@ butts(){
 }
 
 menu(){
-    butts
+    cursor off
+    default_button but_b
+    XY 1 1 "$red Esc to exit"
 
     while true; do
-    read_input
-    case $_input_ in
-         up     ) select_prev_butt "${ybuttons[@]}"; butts;;
-         down   ) select_next_butt "${ybuttons[@]}"; butts;;
-         left   ) select_prev_butt "${xbuttons[@]}"; butts;;
-         right  ) select_next_butt "${xbuttons[@]}"; butts;;
-         enter  ) press_button                       butts;;
-         escape ) return                                  ;;
-    esac
+        butts
+        read_input
+        case $_input_ in
+             up     ) select_prev_butt "${ybuttons[@]}";;
+             down   ) select_next_butt "${ybuttons[@]}";;
+             left   ) select_prev_butt "${xbuttons[@]}";;
+             right  ) select_next_butt "${xbuttons[@]}";;
+             enter  ) press_button      butts          ;;
+             escape ) return                           ;;
+        esac
     done
 }
 
 clear
-XY 1 1 "$red Esc to exit"
 menu

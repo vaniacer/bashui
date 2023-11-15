@@ -34,8 +34,8 @@ menu(){
     while true; do
         read_input
         case $_input_ in
-             enter ) press_button butt;;
-             escape) return;;
+              enter ) press_button butt;;
+              escape) return;;
         esac
     done
 }

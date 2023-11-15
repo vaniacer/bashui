@@ -68,25 +68,23 @@ $ylw'fifth'                'Description 2'                        'O_o'
 
 xbuttons=(but_d but_e but_f)
 butts (){ x_row $LINES "${xbuttons[@]}"; }
-ilist (){ my_items  "${data[@]}"; }
-ilist2(){ my_items2 "${data[@]}"; }
+ilist (){ my_items     "${data[@]}"    ; }
+ilist2(){ my_items2    "${data[@]}"    ; }
 menu(){
-    $1
-    butts
-
     while true; do
-    read_input
-    case $_input_ in
-         up     ) select_prev_item "${data[@]}"       ; $1   ;;
-         down   ) select_next_item "${data[@]}"       ; $1   ;;
-         left   ) select_prev_butt "${xbuttons[@]}"   ; butts;;
-         right  ) select_next_butt "${xbuttons[@]}"   ; butts;;
-         enter  ) press_button                          butts;;
-         escape ) return;;
-         pgup   ) select_prev_item  --fast   "${data[@]}"; $1;;
-         pgdown ) select_next_item  --fast   "${data[@]}"; $1;;
-         *      ) select_by_hot_key $_input_ "${data[@]}"; $1;;
-    esac
+        $1; butts
+        read_input
+        case $_input_ in
+             up     ) select_prev_item "${data[@]}"    ;;
+             down   ) select_next_item "${data[@]}"    ;;
+             left   ) select_prev_butt "${xbuttons[@]}";;
+             right  ) select_next_butt "${xbuttons[@]}";;
+             enter  ) press_button         butts       ;;
+             escape ) return;;
+             pgup   ) select_prev_item  --fast   "${data[@]}";;
+             pgdown ) select_next_item  --fast   "${data[@]}";;
+             *      ) select_by_hot_key $_input_ "${data[@]}";;
+        esac
     done
 }
 

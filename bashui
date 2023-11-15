@@ -453,14 +453,14 @@ reader(){
     local top_line
     local bot_line
     local w=$((COLUMNS-2))
-    printf -v top_line "%${w}s"; top_line=${top_line// /-}
+    printf -v top_line "%${w}s"; top_line=${top_line// /─}
     [[ $name ]] && {
         local test="{ $name }"
         ((${#test}>w)) && w=${#test}
-        top_line=$(center_print $w "$test" -)
+        top_line=$(center_print $w "$test" ─)
         top_line=${top_line//$test/"{ $tc$name $DEF$rc}"}
     }
-    printf -v bot_line "%${w}s"; bot_line=${bot_line// /-}
+    printf -v bot_line "%${w}s"; bot_line=${bot_line// /─}
 
                              XY $x  $y      "$rc+$top_line+$DEF"
     for ((i=0; i<r; i++)); { XY $x $[y+1+i] "$gc$tc%${COLUMNS}s$DEF"; }
