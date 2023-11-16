@@ -14,13 +14,15 @@ butt(){
     #5 Text color
     #6 Border color
     #7 Background color
-    #             1                            2         3       4       5      6       7
-    button $((COLUMNS/2-(${#name}/2+2))) $((LINES/2)) "$name" "result" "$wht" "$ylw" "$bblk"
+    local x=$((COLUMNS/2-(${#name}/2+2)))
+    local y=$((LINES/2))
+    #       1  2    3       4       5      6       7
+    button $x $y "$name" "result" "$wht" "$ylw" "$bblk"
 }
 
 result(){
-    x=$((COLUMNS/2-${#mess}/2))
-    y=$((LINES/2+5))
+    local x=$((COLUMNS/2-${#mess}/2))
+    local y=$((LINES/2+5))
     XY           $x $y  "$mess"
     (sleep 1; XY $x $y "${mess//[[:print:]]/ }") &
 }

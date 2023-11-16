@@ -10,10 +10,9 @@ defb(){
     #5 Text color
     #6 Border color
     #7 Background color
-    #           1    2      3          4          5      6      7
-    button    "$1" "$2" "butt $3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
+    #        1    2      3          4          5      6      7
+    button "$1" "$2" "butt $3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
 }
-
 clr(){ for i in {5..9}; do XY 15 $i "%$((COLUMNS-15))s"; done; } # clear output area
 but_a(){ defb "$1" "$2" A; }
 but_b(){ defb "$1" "$2" B; }

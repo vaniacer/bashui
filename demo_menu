@@ -10,8 +10,8 @@ defb(){
     #5 Text color
     #6 Border color
     #7 Background color
-    #           1    2      3          4          5      6      7
-    button    "$1" "$2" "butt $3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
+    #        1    2      3          4          5      6      7
+    button "$1" "$2" "butt $3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
 }
 
 clr(){ for i in {1..4}; do XY 1 $i "%${COLUMNS}s"; done; } # clear output area
@@ -28,21 +28,25 @@ fun_f(){ clr; XY 1 1 "butt F; all items of target:"
 cursor off
 default_button but_d
 
+w=$((COLUMNS-10))
 my_items(){
-   #1 X(row)  coordinate
-   #2 Y(line) coordinate
-   #3 Window width
-   #4 Window height, min is 5
-   #5 Number of columns or columns sizes in % of Width
-   #6 Name of the list
-   #7 Text color
-   #8 Border color
-   #9 Background color
-   #     1  2        3        4      5                             6                                  7       8      9    data
-   items 10 5 $((COLUMNS-10)) 15     3      "Columns via number(${bred}Esc to continue$bblk)"       "$wht" "$ylw" "$bblk" "$@"
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Window width
+    #4 Window height, min is 5
+    #5 Number of columns or columns sizes in % of Width
+    #6 Name of the list
+    #7 Text color
+    #8 Border color
+    #9 Background
+    local mess="Columns via number(${bred}Esc to continue$bblk)"
+    #     1  2  3  4 5    6      7       8      9    data
+    items 10 5 $w 15 3 "$mess" "$wht" "$ylw" "$bblk" "$@"
 }
 my_items2(){
-   items 10 5 $((COLUMNS-10)) 15 '30 55 15' "Columns via percent of Width(${bred}Esc to exit$bblk)" "$wht" "$ylw" "$bblk" "$@"
+    local mess="Columns via percent of Width(${bred}Esc to exit$bblk)"
+    #     1  2  3  4      5        6      7       8      9    data
+    items 10 5 $w 15 '30 55 15' "$mess" "$wht" "$ylw" "$bblk" "$@"
 }
 
 data=(
