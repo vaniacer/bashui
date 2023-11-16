@@ -29,23 +29,22 @@ cursor off
 default_button but_d
 
 my_items(){
-    #1 X(row)  coordinate
-    #2 Y(line) coordinate
-    #3 Window width
-    #4 Window height, min is 5
-    #5 Number of columns or columns sizes in % of Width
-    #6 Name of the list
-    #7 Text color
-    #8 Border color
-    #9 Background color
-    #     1  2        3        4      5                             6                                  7       8      9    data
-    items 10 5 $((COLUMNS-10)) 15     3      "Columns via number(${bred}Esc to continue$bblk)"       "$wht" "$ylw" "$bblk" "$@"
+   #1 X(row)  coordinate
+   #2 Y(line) coordinate
+   #3 Window width
+   #4 Window height, min is 5
+   #5 Number of columns or columns sizes in % of Width
+   #6 Name of the list
+   #7 Text color
+   #8 Border color
+   #9 Background color
+   #     1  2        3        4      5                             6                                  7       8      9    data
+   items 10 5 $((COLUMNS-10)) 15     3      "Columns via number(${bred}Esc to continue$bblk)"       "$wht" "$ylw" "$bblk" "$@"
 }
 my_items2(){
-    items 10 5 $((COLUMNS-10)) 15 '30 55 15' "Columns via percent of Width(${bred}Esc to exit$bblk)" "$wht" "$ylw" "$bblk" "$@"
+   items 10 5 $((COLUMNS-10)) 15 '30 55 15' "Columns via percent of Width(${bred}Esc to exit$bblk)" "$wht" "$ylw" "$bblk" "$@"
 }
 
-cm1="$wht$bblk"
 data=(
     #-------------{ first line - column descriptions }--------------------
 $red'Item name'        $blu'Item description'                 $grn'Status'
