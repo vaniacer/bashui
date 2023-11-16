@@ -25,6 +25,8 @@ fun_f(){ clr; XY 1 1 "butt F; all items of target:"
               printf -v text -- '%s\n' "${_target_[@]}"
               XY 1 2  "$text"; }
 
+clear
+w=$((COLUMNS-10))
 my_items(){
     #1 X(row)  coordinate
     #2 Y(line) coordinate
@@ -35,13 +37,11 @@ my_items(){
     #7 Text color
     #8 Border color
     #9 Background
-    local w=$((COLUMNS-10))
     local mess="Columns via number(${bred}Esc to continue$bblk)"
-    #     1  2  3  4      5        6      7       8      9    data
-    items 10 5 $w 15      3     "$mess" "$wht" "$ylw" "$bblk" "$@"
+    #     1  2  3  4 5    6      7       8      9    data
+    items 10 5 $w 15 3 "$mess" "$wht" "$ylw" "$bblk" "$@"
 }
 my_items2(){
-    local w=$((COLUMNS-10))
     local mess="Columns via percent of Width(${bred}Esc to exit$bblk)"
     #     1  2  3  4      5        6      7       8      9    data
     items 10 5 $w 15 '30 55 15' "$mess" "$wht" "$ylw" "$bblk" "$@"
@@ -91,7 +91,5 @@ menu  (){
     done
 }
 
-clear
 menu ilist  # Columns via number
-clear
 menu ilist2 # Columns via percent
