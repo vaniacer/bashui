@@ -491,19 +491,13 @@ reader(){
 #------------------------{ Input grabber }------------------------------------------------------------------------------
 read_input(){
     read -rsN1 _input_
-    case ${_input_,,} in
-                  # One symbol keys support
-#                 w*) _input_=up   ;; # optional
-#                 a*) _input_=left ;; # WASD keys
-#                 s*) _input_=down ;; # or others
-#                 d*) _input_=right;; # as cursor
+    case ${_input_,,} in # One symbol keys support
                 ' '*) _input_=space;;
               $'\t'*) _input_=tab  ;;
               $'\n'*) _input_=enter;;
             # escape sequences additional check
             $'\u1b'*) read -rsN4 -t 0.001 _input_
-                      case ${_input_,,} in
-                                   # arrows, pgUp/Down and escape support
+                      case ${_input_,,} in # arrows, pgUp/Down and escape support
                                    *a*) _input_=up    ;;
                                    *b*) _input_=down  ;;
                                    *d*) _input_=left  ;;
