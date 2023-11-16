@@ -347,7 +347,7 @@ items(){
             decolorizer "$item"  decolorized_item
             color=$((${#item}-${#decolorized_item}))
             actual_color=${item:0:$color}
-            ((${#decolorized_item}>=$cs)) && decolorized_item="${decolorized_item:0:$[cs-5]}..." item=$decolorized_item color=0
+            ((${#decolorized_item}>=$cs-1)) && decolorized_item="${decolorized_item:0:$[cs-5]}..." item=$decolorized_item color=0
             ((r==0)) && {
                  [[ $item ]] || ((color++))
                  printf -v new_text "$DEF$rc│$DEF$sel$gc %s$DEF$sel$gc$tc%-$((cs-3+color))s" "$INV$BLD${decolorized_item:0:1}" "$actual_color${decolorized_item:1}"
