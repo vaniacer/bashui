@@ -27,33 +27,33 @@ cmdlist_renew(){
     cmdlist=(
         "Command"    "Description"
         "${slct[@]}" #De/Select command
-    $grn"Username"   "Change ssh username to $grn$GUEST"
+    $grn"Username"   "Change ssh username to $grn$GUEST$cm1"
     $grn"Add tab"    "Add terminal tab with sshto for $ylw$target$cm1"
-    $grn"Ssh tab"    "Add terminal tab with ssh to $ylw$target"
+    $grn"Ssh tab"    "Add terminal tab with ssh to $ylw$target$cm1"
         ''           ''
     $ylw"ls -lah"    "List Files"
     $ylw"free -h"    "Show free memory"
     $ylw"df  -ih"    "Show free inodes"
     $ylw"df   -h"    "Show free disk space"
-    $ylw"Custom"     "Run custom command on $ylw$target"
-    $ylw"Script"     "Run custom script on $ylw$target"
+    $ylw"Custom"     "Run custom command on $ylw$target$cm1"
+    $ylw"Script"     "Run custom script on $ylw$target$cm1"
         ''           ''
     $mgn'Yes'        "Say 'yes' to SSH"
     $mgn"Info"       "Full system info"
     $mgn'Fix_id'     "Update host in known_hosts"
-    $mgn"Sshkey"     "Add my ssh key to $ylw$target"
-    $mgn"Alias"      "Add my useful aliases to $ylw$target"
+    $mgn"Sshkey"     "Add my ssh key to $ylw$target$cm1"
+    $mgn"Alias"      "Add my useful aliases to $ylw$target$cm1"
         ''           ''
-    $cyn"Home"       "Change home folder $grn$home ${cm1}on local server"
-    $cyn"Dest"       "Change destination folder $grn$DEST ${cm1}on $ylw$target"
-    $cyn"Upload"     "Upload file or folder from $grn$home ${cm1}to $ylw$target$grn:$DEST"
-    $cyn"Download"   "Download file or folder from $ylw$target$grn:$DEST ${cm1}to $grn$home"
-    $cyn"Mount"      "Mount remote folder $ylw$target$grn:$DEST ${cm1}to $grn$home"
-    $cyn"Unmount"    "Unmount remote folder $ylw$target$grn:$DEST ${cm1}from $grn$home"
+    $cyn"Home"       "Change home folder $grn$home$cm1 on local server"
+    $cyn"Dest"       "Change destination folder $grn$DEST$cm1 on $ylw$target$cm1"
+    $cyn"Upload"     "Upload file or folder from $grn$home$cm1 to $ylw$target$grn:$DEST$cm1"
+    $cyn"Download"   "Download file or folder from $ylw$target$grn:$DEST ${cm1}to $grn$home$cm1"
+    $cyn"Mount"      "Mount remote folder $ylw$target$grn:$DEST$cm1 to $grn$home$cm1"
+    $cyn"Unmount"    "Unmount remote folder $ylw$target$grn:$DEST$cm1 from $grn$home$cm1"
         ''           ''
-        "Local"      "Change local  port $grn$LOCAL"
-        "Remote"     "Change remote port $grn$REMOTE"
-        "Tunnel"     "Start portunneling from $ylw$target:$grn$REMOTE ${cm1}to ${ylw}localhost:$grn$LOCAL"
+        "Local"      "Change local  port $grn$LOCAL$cm1"
+        "Remote"     "Change remote port $grn$REMOTE$cm1"
+        "Tunnel"     "Start portunneling from $ylw$target:$grn$REMOTE$cm1 to ${ylw}localhost:$grn$LOCAL$cm1"
         ''           ''
     $blu"ShowConf"   "Show ssh config for this host"
     $blu"EditConf"   "Edit ssh config for this host"
@@ -61,25 +61,25 @@ cmdlist_renew(){
     cmdlist_group=(
         "Command"    "Description"
         "${slct_grp[@]}" #De/Select command
-    $grn"Username"   "Change ssh username to $grn$GUEST"
-    $grn"Add tabs"   "Add terminal tabs with sshto for hosts in $ylw$group ${cm1}group"
-    $grn"Ssh tabs"   "Add terminal tabs with ssh to hosts from $ylw$group ${cm1}group"
+    $grn"Username"   "Change ssh username to $grn$GUEST$cm1"
+    $grn"Add tabs"   "Add terminal tabs with sshto for hosts in $ylw$group$cm1 group"
+    $grn"Ssh tabs"   "Add terminal tabs with ssh to hosts from $ylw$group$cm1 group"
         ''           ''
     $ylw"ls  -la"    "List Files"
     $ylw"free -h"    "Show free memory"
     $ylw"df  -ih"    "Show free inodes"
     $ylw"df   -h"    "Show free disk space"
-    $ylw"Custom"     "Run custom command on $ylw$group"
-    $ylw"Script"     "Run custom script on $ylw$group"
+    $ylw"Custom"     "Run custom command on $ylw$group$cm1"
+    $ylw"Script"     "Run custom script on $ylw$group$cm1"
         ''           ''
     $mgn'Yes'        "Say 'yes' to SSH"
     $mgn'Fix_id'     "Update hosts in known_hosts"
     $mgn"Info"       "Full system info"
-    $mgn"Alias"      "Add my useful aliases to $ylw$group"
+    $mgn"Alias"      "Add my useful aliases to $ylw$group$cm1"
         ''           ''
-    $cyn"Home"       "Change home folder $grn$home ${cm1}on local server"
-    $cyn"Dest"       "Change destination folder $grn$DEST on $ylw$group"
-    $cyn"Upload"     "Upload file or folder from $grn$home to $ylw$group$grn:${DEST}"
+    $cyn"Home"       "Change home folder $grn$home$cm1 on local server"
+    $cyn"Dest"       "Change destination folder $grn$DEST$cm1 on $ylw$group$cm1"
+    $cyn"Upload"     "Upload file or folder from $grn$home$cm1 to $ylw$group$grn:$DEST$cm1"
         ''           ''
     $blu"EditConf"   "Edit ssh config for this group"
     )
@@ -694,16 +694,16 @@ butts2nd(){ x_row $((LINES-3)) ${buttons2nd[@]}; }
 commands_list(){
     new_list
     headings="Select command to run on $singleornot ${group:-$target}. $USERNOTE"
-    slct=(Select   "Add $ylw$target ${cm1}to tmp group Selected_hosts"      '' '')
-    [[ ${slctd_hosts["$target"]} ]] && slct=(Deselect "Remove $ylw$target ${cm1}from tmp group Selected_hosts" '' '')
+    slct=(Select   "Add $ylw$target$cm1 to tmp group Selected_hosts"      '' '')
+    [[ ${slctd_hosts["$target"]} ]] && slct=(Deselect "Remove $ylw$target$cm1 from tmp group Selected_hosts" '' '')
 
     group="$1" commands=("${cmdlist[@]}") singleornot='host' runner=''
     [[ $group ]] && {
         commands=("${cmdlist_group[@]}")
         buttons2nd=(but_run but_bck but_ctx)
         singleornot='group' runner='group_run' filter="$group"
-        slct_grp=(Select   "Add all hosts of $ylw$group ${cm1}to tmp group Selected_hosts"      '' '')
-        gsel && slct_grp=(Deselect "Remove all hosts of $ylw$group ${cm1}from tmp group Selected_hosts" '' '')
+        slct_grp=(Select   "Add all hosts of $ylw$group$cm1 to tmp group Selected_hosts"      '' '')
+        gsel && slct_grp=(Deselect "Remove all hosts of $ylw$group$cm1 from tmp group Selected_hosts" '' '')
     }
 
     cmdlist_renew
