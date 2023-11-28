@@ -20,6 +20,8 @@ There is also a demo of [sshto](https://github.com/vaniacer/sshto) redesigned to
 
 This is a work in progress project, so everything is a subject to change.
 Hold your hats!)
+[result](https://habrastorage.org/getpro/habr/upload_files/1a3/29e/f0c/1a329ef0c6761529ed347514fba314a1.gif)
+
 
 [![paypal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/sshto?locale.x=en_US) <sup>Feel free to support the project!)</sup></br>
 
