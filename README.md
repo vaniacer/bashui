@@ -16,7 +16,7 @@ But you can set columns in % of width, like this.
 Number of columns is up to you from 1 to N.
 
 There is also a demo of [sshto](https://github.com/vaniacer/sshto) redesigned to use bashui instead of dialog, try it!)
-![sshto](https://habrastorage.org/getpro/habr/upload_files/5ac/b08/004/5acb08004a2d833d96af5cdb4ac14264.png)
+![sshto](https://github.com/vaniacer/bashui/assets/18072680/1e66ab3b-66b6-4636-b035-ba8d6ba5390b)
 
 This is a work in progress project, so everything is a subject to change.
 Hold your hats!)
