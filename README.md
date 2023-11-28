@@ -16,7 +16,7 @@ Here is an example of 3 columns list of items. All columns are equal in width.
 But you can set columns in % of width, like this.
 ![menu2](https://habrastorage.org/getpro/habr/upload_files/6b1/363/e85/6b1363e854ab01c9a455cd5bec8de6ca.png)
 Number of columns is up to you from 1 to N.
-![menu_demo]https://habrastorage.org/getpro/habr/upload_files/280/2e6/ce2/2802e6ce247d3d2d500abf70f8ca9bd8.gif)
+![menu_demo](https://habrastorage.org/getpro/habr/upload_files/280/2e6/ce2/2802e6ce247d3d2d500abf70f8ca9bd8.gif)
 
 There is also a demo of [sshto](https://github.com/vaniacer/sshto) redesigned to use bashui instead of dialog, try it!)
 ![sshto](https://github.com/vaniacer/bashui/assets/18072680/1e66ab3b-66b6-4636-b035-ba8d6ba5390b)
