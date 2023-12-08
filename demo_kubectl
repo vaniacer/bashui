@@ -1,0 +1,59 @@
+#!/bin/bash
+source bashui
+
+#                       X    Y  name   function             colors
+defb(){        button "$1" "$2" "$3"   "$4"         "$wht" "$ylw" "$bblk"; }
+but_select_ns(){ defb "$1" "$2" select fun_select_ns                     ; }
+but_select_po(){ defb "$1" "$2" select fun_select_po                     ; }
+but_select_np(){ defb "$1" "$2" select fun_select_np                     ; }
+but_all      (){ defb "$1" "$2" all    fun_all                           ; }
+fun_all      (){ ns="--all-namespaces" nsname=all second="np np_data"    ; }
+fun_select_np(){ ns="-n $_target_"     nsname=$_target_ po=${_target_[1]}; }
+fun_select_ns(){ ns="-n $_target_"     nsname=$_target_                  ; }
+fun_select_po(){ po=$_target_; }
+
+#remove some spaces to preserve columns integrity
+sp(){ sed 's/ (/(/g;s/ ago/_ago/g'; }
+
+clear
+w=$((COLUMNS-2))
+#           X Y  height
+#             width   columns              name                             colors            data
+ns(){ items 2 2 $w 20 '60 20 20'          "Select Namespace"         "$wht" "$ylw" "$bblk" "${data[@]}"; }
+po(){ items 2 2 $w 20 '40 15 15 15 15'    "Select Pod"               "$wht" "$ylw" "$bblk" "${data[@]}"; }
+np(){ items 2 2 $w 20 '20 35 10 10 15 10' "Select Pod and Namespace" "$wht" "$ylw" "$bblk" "${data[@]}"; }
+
+ns_data(){ data=( $(kubectl get ns)        ); buttons=(but_select_ns but_all); default_button but_select_ns; }
+po_data(){ data=( $(kubectl get po $ns|sp) ); buttons=(but_select_po)        ; default_button but_select_po; }
+np_data(){ data=( $(kubectl get po $ns|sp) ); buttons=(but_select_np)        ; default_button but_select_np; }
+
+butts(){ x_row $LINES "${buttons[@]}"; }
+menu (){
+    cursor off
+    _currentItem_=0
+    WAIT; $2; GO
+    [[ ${data[@]} ]] || { echo 'no data'; pause; exit; }
+    while true; do
+        $1
+        butts
+        [[ $ns ]] && XY 1 1 "$nsname: $po"
+        read_input; case $_input_ in
+             up     ) select_prev_item "${data[@]}"   ;;
+             down   ) select_next_item "${data[@]}"   ;;
+             left   ) select_prev_butt "${buttons[@]}";;
+             right  ) select_next_butt "${buttons[@]}";;
+             enter  ) press_button butts; return      ;;
+             escape ) bye;;
+             pgup   ) select_prev_item  --fast   "${data[@]}";;
+             pgdown ) select_next_item  --fast   "${data[@]}";;
+             *      ) select_by_hot_key $_input_ "${data[@]}";;
+        esac
+    done
+}
+
+second="po po_data"
+menu ns ns_data
+clear
+menu $second
+clear
+echo "$nsname: $po"
