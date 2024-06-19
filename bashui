@@ -85,6 +85,7 @@ _button_=()
 _action_=
 _animation_enabled_=1
 _animation_speed_=0.05
+_min_culumn_size_=5
 
 button(){
     # Main button function
@@ -255,17 +256,24 @@ center_print(){
     local width=$1
     local text=$2
     local fill=${3:-\ }
+    local min=5
+    ((width<min)) && width=$min
     local decolorized_text
     decolorizer "$text" decolorized_text
+
+    # check if text is too looooooooong
     local tl=${#decolorized_text}
-    (( (width-tl)<0 )) && {                          # check if text is
-        text="${text:0:($[width-9])}...${text:(-2)}" # too looooooooong
-        decolorizer "$text" decolorized_text
-        tl=${#decolorized_text}
+    (( tl>width )) && {
+        local cut=$((width-5))
+        ((cut<0)) && cut=0
+        text="${decolorized_text:0:($[1+cut])}...${decolorized_text:(-1)}"
+        tl=${#text}
     }
 
     local left=$(((width-tl)/2))
     local right=$((width-(left+tl)))
+    ((left <0)) && left=0
+    ((right<0)) && right=0
     local     spaces
     printf -v spaces -- "%${left}s_TEXT_%${right}s"
     local result=${spaces// /$fill}
@@ -285,20 +293,20 @@ items(){
     local   gc=$9            # backGround Color
     shift       9
     local data=("$@")
-    local text c i w z column_size=()
+    local text last c i w z column_size=()
 
     [[ $_currentItem_ ]] || _currentItem_=0
 
     ((w-=x))
     ((${#nclm[@]}>1)) && {
-        for i in ${nclm[@]}; { column_size+=( $((w*i/100)) ); }
+        for i in ${nclm[@]}; { i=$((w*i/100)); ((i<_min_culumn_size_)) && i=$_min_culumn_size_; column_size+=($i); }
         z=${column_size[@]}
         w=$((${z// /+}))
         nclm=${#nclm[@]}
-    }
-
-    ((${#nclm[@]}>1)) || {
+        true
+    } || {
         column_size=$((w/nclm))
+        ((column_size<_min_culumn_size_)) && column_size=$_min_culumn_size_
         w=$((column_size*nclm))
         for ((i=1; i<nclm; i++)); { column_size+=(column_size); }
     }
@@ -315,10 +323,10 @@ items(){
     local row=( "${data[@]:0:nclm}" )
     for r in "${!row[@]}"; {
         item=${row[r]}
-        cs=${column_size[r]:-column_size}
+        cs=${column_size[r]}
         text+="$DEF$rc$c1$(center_print $((cs-1)) "{ $item }" '─')$DEF"
-        text=${text//"{ "/"{ $DEF$tc"}; text=${text//" }"/"$DEF$rc }"}; c1='┬'
-    };  XY $x $y "$text$rc─$c2"; ((y++))
+        text=${text//"{ "/"{ $DEF$tc"}; text=${text//" }"/"$DEF$rc }"}; text=${text//".}"/".$DEF$rc}"}; c1='┬'
+    };  last='─'; ((cs==_min_culumn_size_)) && last=''; XY $x $y "$text$rc$last$c2"; ((y++))
 
     # Print data
     data=(  "${data[@]:$nclm}" )
@@ -364,11 +372,106 @@ items(){
         printf -v tmp_line "%$((cs-1))s┴"; tmp_line=${tmp_line// /─}
         last_line+=$tmp_line
     }
-#    printf -v last_line "%$((column_size-1))s┴" "${row[@]//*/''}"; last_line=${last_line// /─}
+
     XY $x $y "$DEF$rc└${last_line%┴*}─┘$DEF"
     # Show current row out of total rows if not all rows displayed
     ((rows_avail<rows_total)) && { hint="{ $((current_row+1)) of $rows_total }"; XY $((w/2+x-${#hint}/2)) $y "$hint"; }
 }
+
+items_fast(){
+    # Main items piker function
+    local   x=${1:-1}        # X(row)  coordinate
+    local   y=${2:-1}        # Y(line) coordinate
+    local   w=${3:-$COLUMNS} # window Width
+    local   h=${4:-5}        # window Height, min is 5
+         nclm=($5)           # Number of Columns or columns sizes in % of Width
+    local name=$6            # List Name
+    local   tc=$7            # Text Color
+    local   rc=$8            # boRder Color
+    local   gc=$9            # backGround Color
+    shift       9
+    local text last sel_data sel_dummy c i w z column_size=()
+
+    [[ $_currentItem_ ]] || _currentItem_=0
+
+    ((w-=x))
+    ((${#nclm[@]}>1)) && {
+        for i in ${nclm[@]}; { i=$((w*i/100)); ((i<_min_culumn_size_)) && i=$_min_culumn_size_; column_size+=($i); }
+        z=${column_size[@]}
+        w=$((${z// /+}))
+        nclm=${#nclm[@]}
+        true
+    } || {
+        column_size=$((w/nclm))
+        ((column_size<_min_culumn_size_)) && column_size=$_min_culumn_size_
+        w=$((column_size*nclm))
+        for ((i=1; i<nclm; i++)); { column_size+=(column_size); }
+    }
+
+    # Data transformation
+    local titles_items=(    "${@:1:$nclm}" )
+    shift                          $nclm
+    _target_=( "${@:_currentItem_+1:nclm}" )
+    local data=( "${@^}" )
+
+    sel_data="${data[$_currentItem_]:0:$((column_size-3))}"
+    ((${#sel_data}<column_size)) && printf -v sel_data "$sel_data%$((column_size-${#sel_data}-3))s"
+    printf -v sel_dummy "_SD_%$((column_size-7))s"
+    data[$_currentItem_]="$sel_dummy"
+
+    local n=$#
+    local rows_avail=$((h-4))
+    local rows_total=$((n/nclm))
+    local current_row=$((_currentItem_/nclm))
+    _page_=$((rows_avail-1)) # pgUP/DOWN jump calculation
+    ((rows_avail>rows_total)) && rows_avail=$rows_total _page_=$((rows_total-1))
+    j=0; ((current_row>=rows_avail)) && j=$((_currentItem_+nclm-rows_avail*nclm))
+
+    # Print Heading
+    local c1='┌' c2='┐'
+    [[ $name ]] && {
+        local c1='├' c2='┤'
+        XY $x $y "$rc┌$(line '─' $w)┐$DEF"; ((y++))
+        XY $x $y "$DEF$INV$rc│$DEF$INV$tc$(center_print $w "$name")$DEF$INV$rc│$DEF" ; ((y++))
+    }
+
+    titles=
+    last_line=
+    printf -v data_template  "%$((x-1))s"
+    for i in ${!column_size[@]};{
+        cs=${column_size[i]:-column_size}
+
+        # titles preparation
+        titles+="$DEF$rc$c1$(center_print $((cs-1)) "{ ${titles_items[i]} }" '─')$DEF"; c1='┬'
+
+        # main data template preparation
+        data_template+="$DEF$rc│$DEF$gc$tc %-$((cs-3)).$((cs-3))b "
+
+        # last line preparation
+        printf -v  tmp_line "%$((cs-1))s┴"
+        tmp_line=${tmp_line// /─}
+        last_line+=$tmp_line
+    };  data_template+=" $DEF$rc│$DEF\n"
+        titles=${titles//"{ "/"{ $DEF$tc"}
+        titles=${titles//" }"/"$DEF$rc }"}
+        titles=${titles//".}"/".$DEF$rc}"}
+
+    # Print titles
+    last='─'; ((cs==_min_culumn_size_)) && last=''; XY $x $y "$titles$rc$last$c2"; ((y++))
+
+    # Print data
+    XY 1  $y ''
+    printf -v data -- "$data_template" "${data[@]:$j:$((rows_avail*nclm))}"
+    printf "${data/$sel_dummy/$INV${sel_data}}"
+
+    ((y+=rows_avail))
+
+    # Print last line
+    XY $x $y "$DEF$rc└${last_line%┴*}─┘$DEF"
+    # Show current row out of total rows if not all rows displayed
+    ((rows_avail<rows_total)) && { hint="{ $((current_row+1)) of $rows_total }"; XY $((w/2+x-${#hint}/2)) $y "$hint"; }
+}
+
 # Don't copy or modify items function unless you know what you are doing, create a wrapper function instead like this:
 #    test_data(){
          #1 X(row)  coordinate

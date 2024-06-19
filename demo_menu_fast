@@ -28,55 +28,40 @@ fun_f(){ clr; XY 1 1 "butt F; all items of target:"
 clear
 w=$((COLUMNS-10))
 my_items(){
-    #1 X(row)  coordinate
-    #2 Y(line) coordinate
-    #3 Window width
-    #4 Window height, min is 5
-    #5 Number of columns or columns sizes in % of Width
-    #6 Name of the list
-    #7 Text color
-    #8 Border color
-    #9 Background
-    local mess="Columns via number(${bred}Esc to continue$bblk)"
-    #     1  2  3  4 5    6      7       8      9    data
-    items 10 5 $w 20 3 "$mess" "$wht" "$ylw" "$bblk" "$@"
-}
-my_items2(){
-    local mess="Columns via percent of Width(${bred}Esc to exit$bblk)"
-    #     1  2  3  4      5        6      7       8      9    data
-    items 10 5 $w 20 '30 55 15' "$mess" "$wht" "$ylw" "$bblk" "$@"
+    local mess="Fast columns via percent of Width(${bred}Esc to exit$bblk)"
+    items_fast 10 5 $w 20 '30 55 15' "$mess" "$wht" "$ylw" "$bblk" "$@"
 }
 
 data=(
     #-------------{ first line - column descriptions }--------------------
 $red'Item name'        $blu'Item description'                 $grn'Status'
     #-----------------------{ the data }----------------------------------
-    'first'        $BLD$ylw'Long description text'                'true'
+    'first'                'Long description text'                'true'
     'second'               'Description 2'                        'O_o'
     'third'                'description 3'                        'false'
-    'fourth'         "${red}Long ${grn}description ${blu}text"    'true'
+    'fourth'               'Long description text'                'true'
     ''                     ''                                     ''
-$ylw'fifth'                'Description 2'                        'O_o'
+    'fifth'                'Description 2'                        'O_o'
     'sixth'                'description 3'                        'false'
-    'midle'            $grn'Long description text'                'true'
+    'midle'                'Long description text'                'true'
     'long name row2'       'Description 2'                        'O_o'
     ''                     ''                                      ''
     'row 3'                'description 3'                        'false'
-    'row1'             $blu'Long description text'                'true'
+    'row1'                 'Long description text'                'true'
     'row1'                 'Long description text'                'true'
     'last'                 'Description 2'                        'O_o'
-    'first'        $BLD$ylw'Long description text'                'true'
+    'first'                'Long description text'                'true'
     'second'               'Description 2'                        'O_o'
     'third'                'description 3'                        'false'
-    'fourth'         "${red}Long ${grn}description ${blu}text"    'true'
+    'fourth'               'Long description text'                'true'
     ''                     ''                                     ''
-$ylw'fifth'                'Description 2'                        'O_o'
+    'fifth'                'Description 2'                        'O_o'
     'sixth'                'description 3'                        'false'
-    'midle'            $grn'Long description text'                'true'
+    'midle'                'Long description text'                'true'
     'long name row2'       'Description 2'                        'O_o'
     ''                     ''                                      ''
     'row 3'                'description 3'                        'false'
-    'row1'             $blu'Long description text'                'true'
+    'row1'                 'Long description text'                'true'
     'row1'                 'Long description text'                'true'
     'last'                 'Description 2'                        'O_o'
 )
@@ -84,12 +69,12 @@ $ylw'fifth'                'Description 2'                        'O_o'
 xbuttons=(but_d but_e but_f)
 butts (){ x_row $LINES "${xbuttons[@]}"; }
 ilist (){ my_items     "${data[@]}"    ; }
-ilist2(){ my_items2    "${data[@]}"    ; }
 menu  (){
     cursor off
     default_button but_d
     while true; do
-        $1; butts
+        ilist
+        butts
         read_input
         case $_input_ in
              up     ) select_prev_item "${data[@]}"    ;;
@@ -105,6 +90,4 @@ menu  (){
     done
 }
 
-menu ilist  # Columns via number
-clear
-menu ilist2 # Columns via percent
+menu
