@@ -17,6 +17,7 @@ WHT='\e[37m'; wht='\e[97m'; BWHT='\e[47m'; bwht='\e[107m' #| White   |
 #-------------------------{ Effects }----------------------+---------+
 DEF='\e[0m'   #Default color and effects                             |
 BLD='\e[1m'   #Bold\brighter                                         |
+BLD='\e[1m'   #Bold\brighter                                         |
 DIM='\e[2m'   #Dim\darker                                            |
 CUR='\e[3m'   #Italic font                                           |
 UND='\e[4m'   #Underline                                             |
@@ -445,13 +446,13 @@ items_fast(){
         titles+="$DEF$rc$c1$(center_print $((cs-1)) "{ ${titles_items[i]} }" '─')$DEF"; c1='┬'
 
         # main data template preparation
-        data_template+="$DEF$rc│$DEF$gc$tc %-$((cs-3)).$((cs-3))b "
+        data_template+="$rc│$gc$tc %-$((cs-3)).$((cs-3))b "
 
         # last line preparation
         printf -v  tmp_line "%$((cs-1))s┴"
         tmp_line=${tmp_line// /─}
         last_line+=$tmp_line
-    };  data_template+=" $DEF$rc│$DEF\n"
+    };  data_template+="$DEF$gc $DEF$rc│$DEF\n"
         titles=${titles//"{ "/"{ $DEF$tc"}
         titles=${titles//" }"/"$DEF$rc }"}
         titles=${titles//".}"/".$DEF$rc}"}

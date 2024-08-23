@@ -1,0 +1,74 @@
+#!/bin/bash
+source bashui
+
+[[ $TOKEN ]] || bye 'Please set tenis access token'
+[[ $TPLID ]] || bye 'Please set tenis plugin id'
+[[ $TADDR ]] || bye 'Please set tenis address'
+
+renew_interval=10 # renew the list of alerts in X seconds
+
+defb(){
+    # Create default button to copy
+    #1 X(row)  coordinate
+    #2 Y(line) coordinate
+    #3 Button name
+    #4 Function to run
+    #5 Text color
+    #6 Border color
+    #7 Background color
+    #        1    2    3       4          5      6      7
+    button "$1" "$2" "$3" "fun_${3,,}" "$wht" "$ylw" "$bblk"
+}
+
+clr(){ for i in {1..5}; do XY 1 $i "%${COLUMNS}s"; done; } # clear output area
+but_d(){ defb "$1" "$2" Ack    ; }
+but_e(){ defb "$1" "$2" Info   ; }
+but_f(){ defb "$1" "$2" Silence; }
+
+fun_ack    (){ clr; XY 1 1 "Alert '${_target_[1]}' on '${_target_[0]}' has been acknowledged"; }
+fun_silence(){ clr; XY 1 1 "Alert '${_target_[1]}' on '${_target_[0]}' has been silenced"; }
+fun_info   (){ clr; XY 1 1 "  Full alert info:";
+                    printf -v text -- '\t Host: %s\n\tAlert: %s\n\t Time: %s\n\t Text: %s\n' "${_target_[@]}"
+                    XY 1 2  "$text"; }
+
+clear
+w=$((COLUMNS-2))
+h=$((LINES-10))
+my_items(){
+    local mess="Tenis CLI"
+    items_fast 4 6 $w $h '10 20 10 60' "$mess" "$wht" "$ylw" "$bblk" "$@"
+}
+
+renew_data(){
+    readarray -t data < <(curl -sH"$TOKEN" "$TADDR/out?pid=$TPLID" | jq -r '.[] | .host, .alertName, (.fired|todateiso8601), .msg')
+    data=('Host name' 'Alert name' 'Fired' 'Alert info' "${data[@]}")
+}
+
+
+xbuttons=(but_d but_e but_f)
+butts (){ x_row $LINES "${xbuttons[@]}"; }
+ilist (){ my_items     "${data[@]}"    ; }
+menu  (){
+    cursor off
+    default_button but_d
+    while true; do
+        ((SECONDS%renew_interval)) || renew_data
+        ilist
+        butts
+        read_input
+        case $_input_ in
+             up     ) select_prev_item "${data[@]}"    ;;
+             down   ) select_next_item "${data[@]}"    ;;
+             left   ) select_prev_butt "${xbuttons[@]}";;
+             right  ) select_next_butt "${xbuttons[@]}";;
+             enter  ) press_button         butts       ;;
+             escape ) return;;
+             pgup   ) select_prev_item  --fast   "${data[@]}";;
+             pgdown ) select_next_item  --fast   "${data[@]}";;
+             *      ) select_by_hot_key $_input_ "${data[@]}";;
+        esac
+    done
+}
+
+renew_data
+menu
