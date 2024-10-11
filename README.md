@@ -29,8 +29,10 @@ This is a work in progress project, so everything is a subject to change.
 Hold your hats!)
 ![result](https://habrastorage.org/getpro/habr/upload_files/1a3/29e/f0c/1a329ef0c6761529ed347514fba314a1.gif)
 
+СБПшка на еду<br/>
+![4food](https://github.com/user-attachments/assets/db4500f2-3399-469c-995e-808b87c48f1e)
 
-~~Twitter~~ DOGE: D7qJBRU3UpXES9EwtvE8YZSNAVgFEmz3py</br>
+DOGE: D7qJBRU3UpXES9EwtvE8YZSNAVgFEmz3py</br>
 ![dodge](https://user-images.githubusercontent.com/18072680/229992296-f415eadb-645b-4229-81c7-e269485c635d.png)
 
 BTC: 1LxRxsyXP389YW3Ezw9YzNetE5VYj1RaJf</br>
