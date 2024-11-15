@@ -28,6 +28,3 @@ There is also a demo of [sshto](https://github.com/vaniacer/sshto) redesigned to
 This is a work in progress project, so everything is a subject to change.
 Hold your hats!)
 ![result](https://habrastorage.org/getpro/habr/upload_files/1a3/29e/f0c/1a329ef0c6761529ed347514fba314a1.gif)
-
-СБПшка на еду<br/>
-![4food](https://github.com/user-attachments/assets/db4500f2-3399-469c-995e-808b87c48f1e)
